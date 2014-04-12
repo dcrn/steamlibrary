@@ -129,7 +129,6 @@
 				else
 				{
 					$('.game').toggle(false);
-					var ticked = 0;
 					$('#filters > label > input').each(function(i, e)
 						{
 							if (e.checked)
@@ -141,7 +140,6 @@
 									if (cats.indexOf(cat) > -1)
 										$(e).toggle(true);
 								});
-								ticked += 1;
 							}
 						});
 				}
