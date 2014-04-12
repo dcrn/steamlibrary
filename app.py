@@ -1,19 +1,8 @@
 from flask import Flask, request, g, jsonify, render_template
 import json, urllib.request, json
-from pymongo import MongoClient
 
 app = Flask(__name__)
 apikey = 'A1469E2FFEE5E9C8332076EDD761BC60'
-
-@app.before_request
-def before_request():
-	g.mongo = MongoClient()
-	g.db = g.mongo.gameslist
-
-@app.teardown_request
-def teardown_request(exc):
-	if g.mongo is not None:
-		g.mongo.close()
 
 def apicall(interface, method, ver, query):
 	url = 'http://api.steampowered.com/' + interface + '/' + method + '/v000' + ver + '/?key=' + apikey + '&format=json&' + query

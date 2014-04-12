@@ -167,7 +167,7 @@
 				});
 				idstring = idstring.slice(0, -1);
 
-				$.ajax('/compare/' + idstring)
+				$.ajax('{{url_for('compare', idlist='')}}' + idstring)
 					.done(function(data)
 					{
 						$('#go-button').button('reset');
