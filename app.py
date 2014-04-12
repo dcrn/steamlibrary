@@ -1,0 +1,111 @@
+from flask import Flask, request, g, jsonify, render_template
+import json, urllib.request, json
+from pymongo import MongoClient
+
+app = Flask(__name__)
+apikey = 'A1469E2FFEE5E9C8332076EDD761BC60'
+
+@app.before_request
+def before_request():
+	g.mongo = MongoClient()
+	g.db = g.mongo.gameslist
+
+@app.teardown_request
+def teardown_request(exc):
+	if g.mongo is not None:
+		g.mongo.close()
+
+def apicall(interface, method, ver, query):
+	url = 'http://api.steampowered.com/' + interface + '/' + method + '/v000' + ver + '/?key=' + apikey + '&format=json&' + query
+	out = urllib.request.urlopen(url).read()
+	j = json.loads(str(out, 'UTF-8'))
+	return j
+
+def resolveVanityID(vanityurl):
+	j = apicall('ISteamUser', 'ResolveVanityURL', '1', 'vanityurl=' + vanityurl)
+	if j['response']['success'] != 1:
+		return None;
+	return j['response']['steamid']
+
+def checkSteamIDs(steamids):
+	j = apicall('ISteamUser', 'GetPlayerSummaries', '2', 'steamids=' + ','.join(steamids))
+	return len(j['response']['players']) == len(steamids)
+
+def getGames(steamid):
+	j = apicall('IPlayerService', 'GetOwnedGames', '1', 'steamid=' + steamid +
+		'&include_played_free_games=1&include_appinfo=1')
+
+	if 'games' not in j['response']:
+		return {}
+
+	return {
+		game['appid']: {
+				'name': game['name'],
+				'logo': 
+					(('http://media.steampowered.com/steamcommunity/public/images/apps/' +
+					str(game['appid']) + '/' + game['img_logo_url'] + '.jpg')
+					if game['img_logo_url']
+					else '')
+			} 
+			for game in j['response']['games']
+		}
+
+def getGameCategories(appidlist):
+	url = 'http://store.steampowered.com/api/appdetails/?appids='+(','.join(map(str, appidlist)))+'&filters=categories'
+	out = urllib.request.urlopen(url).read()
+	j = json.loads(str(out, 'utf-8'))
+
+	categories = {}
+	games = {}
+
+	for appid in j:
+		if j[appid]['success'] == True and j[appid]['data'] != []:
+			games[int(appid)] = [int(cat['id']) for cat in j[appid]['data']['categories']]
+			for cat in j[appid]['data']['categories']:
+				categories[int(cat['id'])] = cat['description']
+
+	return {'categories': categories, 'games': games}
+
+@app.route('/compare/<idlist>')
+def compare(idlist):
+	idlist = idlist.split(',');
+
+	ids = []
+	for id in idlist:
+		if not id.isdigit():
+			id = resolveVanityID(id)
+		if id is not None:
+			ids.append(id)
+
+	if len(ids) != len(idlist):
+		return "Invalid ID(s)"
+
+	games = []
+	for id in ids:
+		games.append(getGames(id))
+
+	gameids = set(games[0].keys())
+	for g in games:
+		gameids = gameids.intersection(set(g.keys()))
+
+	gameids = list(gameids)
+	gamecats = getGameCategories(gameids)
+	
+	gamelist = {key: {
+				'name': games[0][key]['name'],
+				'logo': games[0][key]['logo'],
+				'categories': gamecats['games'][key] if key in gamecats['games'] else []
+			}
+			for key in games[0] if key in gameids
+		}
+
+	output = {'games': gamelist, 'categories': gamecats['categories']}
+
+	return jsonify(output)
+
+@app.route('/')
+def index():
+	return render_template('index.html')
+
+if __name__ == '__main__':
+	app.run(debug=True, host='0.0.0.0')

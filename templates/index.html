@@ -1,0 +1,259 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Video games</title>
+	<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+	<style type="text/css">
+		body {
+			margin: 0px;
+		}
+
+		.logo {
+			width: 184px;
+			height: 69px;
+		}
+
+		#formbox {
+			background-color: white;
+			border: 1px solid #428bca;
+			border-radius: 5px;
+			width: 100%;
+			padding: 4px;
+		}
+
+		#id-input, #id-input:focus {
+			border: 0;
+			box-shadow: none;
+			-webkit-box-shadow: none;
+		}
+
+		#id-form {
+			display: inline;
+		}
+
+		#id-input {
+			padding: 0;
+			margin: 0;
+			margin-left: 0px;
+			position: relative;
+			top: -1px;
+		}
+
+		.idspan {
+			display: inline-block;
+			margin-right: 3px;
+			border-radius: 2px;
+			border: solid 1px #428bca;
+			background-color: #d9edf7;
+			padding: 2px;
+			margin-bottom: 4px;
+		}
+
+		.idspan a {
+			margin-left: 4px;
+			margin-bottom: 4px;
+			line-height: 20px;
+			vertical-align: middle;
+			text-decoration: none;
+		}
+
+		#top
+		{
+			margin-top: 4px;
+			padding: 5px;
+		}
+
+		#top #formbox
+		{
+			border-bottom-left-radius: 0px;
+			border-bottom-right-radius: 0px;
+		}
+
+		#top button
+		{
+			border-top-left-radius: 0px;
+			border-top-right-radius: 0px;
+		}
+
+		#filter-toggle
+		{
+			text-decoration: none;
+		}
+
+		#games
+		{
+			text-align: center;
+		}
+
+		.game
+		{
+			display: inline-block;
+			background-color: #222222;
+		}
+
+		.game img
+		{
+			width: 184px;
+			height: 69px;
+		}
+
+		.jumbotron
+		{
+			margin: 4px;
+			padding: 4px;
+		}
+
+		label
+		{
+			margin-right: 6px;
+		}
+	</style>
+	<script type="text/javascript">
+		function onload()
+		{
+			function filtergames(e)
+			{
+				$('.game').toggle(true);
+				$('#filters > label > input').each(function(i, e)
+					{
+						if (e.checked)
+						{
+							var cat = $(e).data('category');
+							$('.game').each(function(i, e)
+							{
+								var cats = $(e).data('categories') || [];
+								$(e).toggle(cats.indexOf(cat) > -1);
+							});
+						}
+					});
+			}
+
+			$('#go-button').prop('disabled', true);
+			$('#go-button').click(function(e)
+			{
+				e.preventDefault();
+				$('#go-button').button('loading');
+				if ($('#id-input').val().trim() != '')
+					$('#id-form').submit();
+
+				var ids = $('.idspan .id')
+				if (ids.length <= 1)
+					return false;
+
+				var idstring = '';
+				$('.idspan .id').each(function()
+				{
+					if ($(this).text() != '')
+						idstring = idstring + $(this).text() + ',';
+				});
+				idstring = idstring.slice(0, -1);
+
+				$.ajax('/compare/' + idstring)
+					.done(function(data)
+					{
+						$('#go-button').button('reset');
+						//console.log(data);
+						$('#games').empty();
+						for (var appid in data['games'])
+						{
+							if (data['games'][appid]['logo'] != '')
+							{
+								var newgame = $('.game').first().clone();
+								var img = newgame.find('img').first()
+								img.attr('src', data['games'][appid]['logo']);
+								img.attr('title', data['games'][appid]['name']);
+								newgame.data('categories', data['games'][appid]['categories']);
+
+								$('#games').append(newgame);
+							}
+						}
+
+						$('#filters').empty();
+						for (var key in data['categories'])
+						{
+							var newcheck = $('<label><input type="checkbox">' + data['categories'][key] + '</label>');
+							newcheck.find('input').data('category', parseInt(key));
+							newcheck.change(filtergames);
+							$('#filters').append(newcheck);
+						}
+					});
+
+				return false;
+			});
+
+			$('.remove-id').click(function removeid(e)
+			{
+				e.preventDefault();
+				$(this).parent().remove();
+
+				if ($('.idspan').length <= 1)
+				{
+					$('#go-button').prop('disabled', true);
+				}
+				return false;
+			});
+
+			$('#id-form').submit(function(e)
+			{
+				e.preventDefault();
+				var input = $('#id-input');
+
+				if (input.val() == '' && $('.idspan').length > 1)
+				{
+					$('#go-button').click();
+					return false;
+				}
+
+				var val = input.val().trim();
+				if (val == '')
+				{
+					input.val('');
+					return false;
+				}
+
+				$('#go-button').prop('disabled', false);
+				var newid = $('.idspan').first().clone(true);
+				newid.find('.id').text(val);
+				
+				$('#idbox').append(newid);
+				input.val('');
+				return false;
+			});
+
+			$('#filter-toggle').click(function(e)
+			{
+				e.preventDefault();
+				$('#filterbox').slideToggle();
+			});
+		}
+	</script>
+</head>
+<body onload="onload()">
+	<div class="container">
+		<div id="top">
+			<div id="formbox">
+				<span id="idbox"></span>
+				<form class="form-inline" role="form" id="id-form">
+					<input type="text" class="form-control" placeholder="Community ID/Vanity URL" id="id-input" autofocus>
+				</form>
+			</div>
+			<button class="btn btn-primary btn-block btn-sm" data-loading-text="Loading..." id="go-button">Go</button>
+		</div>
+		<div class="jumbotron well well-sm" id="bottom">
+			<a href="" id="filter-toggle"><span class="glyphicon glyphicon-collapse-down"></span> Filters</a>
+			<div id="filterbox" style="display: none;">
+				<form id="filters">
+				</form>
+			</div>
+			<div id="games"></div>
+		</div>
+	</div>
+	<div class="hidden">
+		<span class="idspan"><span class="id"></span><a class="glyphicon glyphicon-remove remove-id" href="#"></a></span>
+		<div class="game"><img src="" alt="" /></div>
+	</div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+</body>
+</html>
