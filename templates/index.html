@@ -107,6 +107,14 @@
 		label
 		{
 			margin-right: 6px;
+			width: 200px;
+			overflow: hidden;
+		}
+
+		hr
+		{
+			margin-top: 4px;
+			margin-bottom: 4px;
 		}
 	</style>
 	<script type="text/javascript">
@@ -114,19 +122,29 @@
 		{
 			function filtergames(e)
 			{
-				$('.game').toggle(true);
-				$('#filters > label > input').each(function(i, e)
-					{
-						if (e.checked)
+				if ($('#filters > label > input:checked').length == 0)
+				{
+					$('.game').toggle(true);
+				}
+				else
+				{
+					$('.game').toggle(false);
+					var ticked = 0;
+					$('#filters > label > input').each(function(i, e)
 						{
-							var cat = $(e).data('category');
-							$('.game').each(function(i, e)
+							if (e.checked)
 							{
-								var cats = $(e).data('categories') || [];
-								$(e).toggle(cats.indexOf(cat) > -1);
-							});
-						}
-					});
+								var cat = $(e).data('category');
+								$('.game').each(function(i, e)
+								{
+									var cats = $(e).data('categories') || [];
+									if (cats.indexOf(cat) > -1)
+										$(e).toggle(true);
+								});
+								ticked += 1;
+							}
+						});
+				}
 			}
 
 			$('#go-button').prop('disabled', true);
@@ -235,7 +253,7 @@
 			<div id="formbox">
 				<span id="idbox"></span>
 				<form class="form-inline" role="form" id="id-form">
-					<input type="text" class="form-control" placeholder="Community ID/Vanity URL" id="id-input" autofocus>
+					<input type="text" class="form-control" size="25" placeholder="Community ID/Vanity URL" id="id-input" autofocus>
 				</form>
 			</div>
 			<button class="btn btn-primary btn-block btn-sm" data-loading-text="Loading..." id="go-button">Go</button>
@@ -246,6 +264,7 @@
 				<form id="filters">
 				</form>
 			</div>
+			<hr />
 			<div id="games"></div>
 		</div>
 	</div>
