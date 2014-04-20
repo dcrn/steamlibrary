@@ -51,15 +51,21 @@ def getGameCategories(appidlist):
 	for appid in j:
 		if j[appid]['success'] == True and j[appid]['data'] != []:
 			games[int(appid)] = {}
-			games[int(appid)]['categories'] = [int(cat['id']) for cat in j[appid]['data']['categories']]
+
+			if 'categories' in j[appid]['data']:
+				games[int(appid)]['categories'] = [int(cat['id']) for cat in j[appid]['data']['categories']]
+			else:
+				games[int(appid)]['categories'] = []
 
 			if 'genres' in j[appid]['data']:
 				games[int(appid)]['genres'] = [int(gen['id']) for gen in j[appid]['data']['genres']]
 			else:
 				games[int(appid)]['genres'] = []
 
-			for cat in j[appid]['data']['categories']:
-				categories[int(cat['id'])] = cat['description']
+			if 'categories' in j[appid]['data']:
+				for cat in j[appid]['data']['categories']:
+					categories[int(cat['id'])] = cat['description']
+			
 			if 'genres' in j[appid]['data']:
 				for gen in j[appid]['data']['genres']:
 					genres[int(gen['id'])] = gen['description']
