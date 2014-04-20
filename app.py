@@ -50,7 +50,6 @@ def getGameCategories(appidlist):
 
 	for appid in j:
 		if j[appid]['success'] == True and j[appid]['data'] != []:
-			print(appid)
 			games[int(appid)] = {}
 			games[int(appid)]['categories'] = [int(cat['id']) for cat in j[appid]['data']['categories']]
 
