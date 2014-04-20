@@ -40,20 +40,32 @@ def getGames(steamid):
 		}
 
 def getGameCategories(appidlist):
-	url = 'http://store.steampowered.com/api/appdetails/?appids='+(','.join(map(str, appidlist)))+'&filters=categories'
+	url = 'http://store.steampowered.com/api/appdetails/?appids='+(','.join(map(str, appidlist)))+'&filters=categories,genres'
 	out = urllib.request.urlopen(url).read()
 	j = json.loads(str(out, 'utf-8'))
 
 	categories = {}
+	genres = {}
 	games = {}
 
 	for appid in j:
 		if j[appid]['success'] == True and j[appid]['data'] != []:
-			games[int(appid)] = [int(cat['id']) for cat in j[appid]['data']['categories']]
+			print(appid)
+			games[int(appid)] = {}
+			games[int(appid)]['categories'] = [int(cat['id']) for cat in j[appid]['data']['categories']]
+
+			if 'genres' in j[appid]['data']:
+				games[int(appid)]['genres'] = [int(gen['id']) for gen in j[appid]['data']['genres']]
+			else:
+				games[int(appid)]['genres'] = []
+
 			for cat in j[appid]['data']['categories']:
 				categories[int(cat['id'])] = cat['description']
+			if 'genres' in j[appid]['data']:
+				for gen in j[appid]['data']['genres']:
+					genres[int(gen['id'])] = gen['description']
 
-	return {'categories': categories, 'games': games}
+	return {'categories': categories, 'genres': genres, 'games': games}
 
 @app.route('/compare/<idlist>')
 def compare(idlist):
@@ -83,12 +95,13 @@ def compare(idlist):
 	gamelist = {key: {
 				'name': games[0][key]['name'],
 				'logo': games[0][key]['logo'],
-				'categories': gamecats['games'][key] if key in gamecats['games'] else []
+				'categories': gamecats['games'][key]['categories'] if key in gamecats['games'] else [],
+				'genres': gamecats['games'][key]['genres'] if key in gamecats['games'] else []
 			}
 			for key in games[0] if key in gameids
 		}
 
-	output = {'games': gamelist, 'categories': gamecats['categories']}
+	output = {'games': gamelist, 'categories': gamecats['categories'], 'genres': gamecats['genres']}
 
 	return jsonify(output)
 

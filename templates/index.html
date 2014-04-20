@@ -2,7 +2,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-	<title>Video games</title>
+	<title>Steam library</title>
 	<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 	<style type="text/css">
 		body {
@@ -58,6 +58,15 @@
 			text-decoration: none;
 		}
 
+		#bottom
+		{
+			border-top-left-radius: 0px;
+			border-top-right-radius: 0px;
+			margin-top: -6px !important;
+			margin: 5px;
+			border: 1px solid #428bca;
+		}
+
 		#top
 		{
 			margin-top: 4px;
@@ -70,10 +79,9 @@
 			border-bottom-right-radius: 0px;
 		}
 
-		#top button
+		#spinner
 		{
-			border-top-left-radius: 0px;
-			border-top-right-radius: 0px;
+			display: inline;
 		}
 
 		#filter-toggle
@@ -104,11 +112,30 @@
 			padding: 4px;
 		}
 
+		#categories
+		{
+			text-align: center;
+		}
+
+		#genres
+		{
+			text-align: center;
+		}
+
+		#scale
+		{
+			display: inline;
+			width: 200px;
+			height: 12px;
+		}
+
 		label
 		{
-			margin-right: 6px;
-			width: 200px;
+			margin-right: 0px;
+			width: 140px;
 			overflow: hidden;
+			font-size: 8pt !important;
+			margin: 1px;
 		}
 
 		hr
@@ -120,16 +147,19 @@
 	<script type="text/javascript">
 		function onload()
 		{
+			var loading = false;
+			$('#spinner').toggle(false);
+
 			function filtergames(e)
 			{
-				if ($('#filters > label > input:checked').length == 0)
+				if ($('#categories > label > input:checked').length == 0)
 				{
 					$('.game').toggle(true);
 				}
 				else
 				{
 					$('.game').toggle(false);
-					$('#filters > label > input').each(function(i, e)
+					$('#categories > label > input').each(function(i, e)
 						{
 							if (e.checked)
 							{
@@ -143,16 +173,24 @@
 							}
 						});
 				}
+
+				$('#genres > label > input').each(function(i, e)
+				{
+					if (e.checked)
+					{
+						var gen = $(e).data('genre');
+						$('.game').each(function(i, e)
+						{
+							var gens = $(e).data('genres') || [];
+							if (gens.indexOf(gen) == -1)
+								$(e).toggle(false);
+						});
+					}
+				});
 			}
 
-			$('#go-button').prop('disabled', true);
-			$('#go-button').click(function(e)
+			function submit_ids()
 			{
-				e.preventDefault();
-				$('#go-button').button('loading');
-				if ($('#id-input').val().trim() != '')
-					$('#id-form').submit();
-
 				var ids = $('.idspan .id')
 				if (ids.length <= 1)
 					return false;
@@ -165,12 +203,18 @@
 				});
 				idstring = idstring.slice(0, -1);
 
+				loading = true;
+				$('#spinner').toggle(true);
+				$('#games').empty();
+				$('#categories').empty();
+				$('#genres').empty();
+
 				$.ajax('{{url_for('compare', idlist='')}}' + idstring)
 					.done(function(data)
 					{
-						$('#go-button').button('reset');
-						//console.log(data);
-						$('#games').empty();
+						$('#spinner').toggle(false);
+						loading = false;
+
 						for (var appid in data['games'])
 						{
 							if (data['games'][appid]['logo'] != '')
@@ -180,35 +224,49 @@
 								img.attr('src', data['games'][appid]['logo']);
 								img.attr('title', data['games'][appid]['name']);
 								newgame.data('categories', data['games'][appid]['categories']);
+								newgame.data('genres', data['games'][appid]['genres']);
 
 								$('#games').append(newgame);
 							}
 						}
 
-						$('#filters').empty();
 						for (var key in data['categories'])
 						{
-							var newcheck = $('<label><input type="checkbox">' + data['categories'][key] + '</label>');
+							var newcheck = $('<label class="btn btn-primary btn-xs"><input type="checkbox">' +
+								data['categories'][key] + '</label>');
 							newcheck.find('input').data('category', parseInt(key));
 							newcheck.change(filtergames);
-							$('#filters').append(newcheck);
+							$('#categories').append(newcheck);
+						}
+
+						for (var key in data['genres'])
+						{
+							var newcheck = $('<label class="btn btn-primary btn-xs"><input type="checkbox">' +
+								data['genres'][key] + '</label>');
+							newcheck.find('input').data('genre', parseInt(key));
+							newcheck.change(filtergames);
+							$('#genres').append(newcheck);
 						}
 
 						$('.game').toggle(true);
+						$('#scale').change();
 					});
 
 				return false;
+			}
+
+			$('#scale').change(function (e)
+			{
+				var value = $('#scale').val();
+
+				$('.game > img').width(184 * value);
+				$('.game > img').height(69 * value);
 			});
 
-			$('.remove-id').click(function removeid(e)
+			$('.remove-id').click(function (e)
 			{
 				e.preventDefault();
 				$(this).parent().remove();
-
-				if ($('.idspan').length <= 1)
-				{
-					$('#go-button').prop('disabled', true);
-				}
 				return false;
 			});
 
@@ -219,7 +277,7 @@
 
 				if (input.val() == '' && $('.idspan').length > 1)
 				{
-					$('#go-button').click();
+					submit_ids();
 					return false;
 				}
 
@@ -230,7 +288,6 @@
 					return false;
 				}
 
-				$('#go-button').prop('disabled', false);
 				var newid = $('.idspan').first().clone(true);
 				newid.find('.id').text(val);
 				
@@ -239,16 +296,21 @@
 				return false;
 			});
 
-			$('#filter-toggle').click(function(e)
+			$('#category-toggle').click(function(e)
 			{
 				e.preventDefault();
-				$('#filterbox').slideToggle();
+				$('#categorybox').slideToggle();
+			});
+
+			$('#genre-toggle').click(function(e)
+			{
+				e.preventDefault();
+				$('#genrebox').slideToggle();
 			});
 		}
 	</script>
 </head>
 <body onload="onload()">
-	<div class="container">
 		<div id="top">
 			<div id="formbox">
 				<span id="idbox"></span>
@@ -256,18 +318,26 @@
 					<input type="text" class="form-control" size="25" placeholder="Community ID/Vanity URL" id="id-input" autofocus>
 				</form>
 			</div>
-			<button class="btn btn-primary btn-block btn-sm" data-loading-text="Loading..." id="go-button">Go</button>
 		</div>
 		<div class="jumbotron well well-sm" id="bottom">
-			<a href="" id="filter-toggle"><span class="glyphicon glyphicon-collapse-down"></span> Filters</a>
-			<div id="filterbox" style="display: none;">
-				<form id="filters">
-				</form>
+			<a href="" id="category-toggle"><span class="glyphicon glyphicon-collapse-down"></span> Categories</a>
+			&nbsp;&nbsp;
+			<a href="" id="genre-toggle"><span class="glyphicon glyphicon-collapse-down"></span> Genres</a>
+			&nbsp;&nbsp; Scale <input type="range" min="0.3" max="1" step="0.01" value="1" id="scale" />
+			<div id="spinner"><img src="{{url_for('static', filename='spinner.gif')}}" alt="loading" /></div>
+			<div id="categorybox" style="display: none;">
+				<hr />
+				<div id="categories" data-toggle="buttons">
+				</div>
+			</div>
+			<div id="genrebox" style="display: none;">
+				<hr />
+				<div id="genres" data-toggle="buttons">
+				</div>
 			</div>
 			<hr />
 			<div id="games"></div>
 		</div>
-	</div>
 	<div class="hidden">
 		<span class="idspan"><span class="id"></span><a class="glyphicon glyphicon-remove remove-id" href="#"></a></span>
 		<div class="game"><img src="" alt="" /></div>
