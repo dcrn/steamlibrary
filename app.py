@@ -103,7 +103,7 @@ def compare(idlist):
 
 	output = {'games': gamelist, 'categories': gamecats['categories'], 'genres': gamecats['genres']}
 
-	return jsonify(output)
+	return jsonify(gamecats['genres'])
 
 @app.route('/')
 def index():
