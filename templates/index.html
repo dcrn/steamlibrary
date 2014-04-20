@@ -97,13 +97,50 @@
 		.game
 		{
 			display: inline-block;
-			background-color: #222222;
-		}
-
-		.game img
-		{
+			position: relative;
 			width: 184px;
 			height: 69px;
+			background-color: #222222;
+			-webkit-background-size: cover;
+			-moz-background-size: cover;
+			-o-background-size: cover;
+			background-size: cover;
+		}
+
+		.game-top
+		{
+			width: 100%;
+			height: 12px;
+			line-height: 12px;
+			font-size: 12px;
+			background-color: #222222;
+			position: absolute;
+			top: 0;
+			left: 0;
+			opacity: 0.8;
+			filter: alpha(opacity=80);
+			color: #ffffff;
+			overflow: hidden;
+		}
+
+		.game-bottom
+		{
+			width: 100%;
+			height: 12px;
+			line-height: 12px;
+			font-size: 12px;
+			background-color: #222222;
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			opacity: 0.8;
+			filter: alpha(opacity=80);
+			color: #ffffff;
+		}
+
+		.game-bottom a, .game-bottom a:hover
+		{
+			color: #ffffff;
 		}
 
 		.jumbotron
@@ -220,9 +257,9 @@
 							if (data['games'][appid]['logo'] != '')
 							{
 								var newgame = $('.game').first().clone();
-								var img = newgame.find('img').first()
-								img.attr('src', data['games'][appid]['logo']);
-								img.attr('title', data['games'][appid]['name']);
+								newgame.find('.game-top').text(data['games'][appid]['name']);
+								newgame.find('.game-bottom > a').attr('href', 'steam://run/' + appid);
+								newgame.css('background-image', 'url(' + data['games'][appid]['logo'] + ')');
 								newgame.data('categories', data['games'][appid]['categories']);
 								newgame.data('genres', data['games'][appid]['genres']);
 
@@ -255,19 +292,29 @@
 				return false;
 			}
 
-			$('#scale').change(function (e)
+			$('#scale').change(function()
 			{
-				var value = $('#scale').val();
+				var value = $(this).val();
 
-				$('.game > img').width(184 * value);
-				$('.game > img').height(69 * value);
+				$('.game').width(184 * value);
+				$('.game').height(69 * value);
 			});
 
-			$('.remove-id').click(function (e)
+			$('.remove-id').click(function(e)
 			{
 				e.preventDefault();
 				$(this).parent().remove();
 				return false;
+			});
+
+			$('.game-top, .game-bottom').toggle(false);
+			$(document).on('mouseenter', '.game', function()
+			{
+				$(this).find('.game-top, .game-bottom').toggle(true);
+			});
+			$(document).on('mouseleave', '.game', function()
+			{
+				$(this).find('.game-top, .game-bottom').toggle(false);
 			});
 
 			$('#id-form').submit(function(e)
@@ -340,9 +387,9 @@
 		</div>
 	<div class="hidden">
 		<span class="idspan"><span class="id"></span><a class="glyphicon glyphicon-remove remove-id" href="#"></a></span>
-		<div class="game"><img src="" alt="" /></div>
+		<div class="game"><div class="game-top"></div><div class="game-bottom"><a href="">Launch</a></div></div>
 	</div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 </body>
 </html>
