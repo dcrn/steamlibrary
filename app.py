@@ -1,11 +1,13 @@
-from flask import Flask, request, g, jsonify, render_template
-import json, urllib.request, json
+from flask import Flask, request, jsonify, render_template
+import json, urllib.request, json, os
 
 app = Flask(__name__)
-apikey = 'A1469E2FFEE5E9C8332076EDD761BC60'
+apikey = ''
 
 def apicall(interface, method, ver, query):
+	global apikey
 	url = 'http://api.steampowered.com/' + interface + '/' + method + '/v000' + ver + '/?key=' + apikey + '&format=json&' + query
+	print(url)
 	out = urllib.request.urlopen(url).read()
 	j = json.loads(str(out, 'UTF-8'))
 	return j
@@ -114,5 +116,20 @@ def compare(idlist):
 def index():
 	return render_template('index.html')
 
+@app.before_first_request
+def before_first_request(*args, **kwargs):
+	# Get Steam API key
+	global apikey
+	apifile = open('apikey.txt', 'r')
+	apikey = apifile.read()
+	print(apikey)
+
+def main():
+	if not os.path.isfile('apikey.txt'):
+		print('No SteamAPI key found (apikey.txt)')
+	else:
+		app.run(host='0.0.0.0')
+
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0')
+	main()
+
