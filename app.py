@@ -7,7 +7,6 @@ apikey = ''
 def apicall(interface, method, ver, query):
 	global apikey
 	url = 'http://api.steampowered.com/' + interface + '/' + method + '/v000' + ver + '/?key=' + apikey + '&format=json&' + query
-	print(url)
 	out = urllib.request.urlopen(url).read()
 	j = json.loads(str(out, 'UTF-8'))
 	return j
@@ -122,7 +121,6 @@ def before_first_request(*args, **kwargs):
 	global apikey
 	apifile = open('apikey.txt', 'r')
 	apikey = apifile.read()[:-1]
-	print(apikey)
 
 def main():
 	if not os.path.isfile('apikey.txt'):
